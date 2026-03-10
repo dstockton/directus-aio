@@ -1,0 +1,98 @@
+name: Check Upstream Releases
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Every hour
+  workflow_dispatch: {}
+
+concurrency:
+  group: check-upstream
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for new upstream tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          MIN_VERSION="11.16.0"
+          UPSTREAM_IMAGE="directus/directus"
+
+          # Fetch upstream tags from Docker Hub (paginate)
+          echo "Fetching upstream tags..."
+          UPSTREAM_TAGS=""
+          URL="https://hub.docker.com/v2/repositories/${UPSTREAM_IMAGE}/tags/?page_size=100&ordering=last_updated"
+
+          while [ -n "$URL" ] && [ "$URL" != "null" ]; do
+            RESPONSE=$(curl -sf "$URL")
+            PAGE_TAGS=$(echo "$RESPONSE" | jq -r '.results[].name')
+            UPSTREAM_TAGS="${UPSTREAM_TAGS}${PAGE_TAGS}"$'\n'
+            URL=$(echo "$RESPONSE" | jq -r '.next // "null"')
+          done
+
+          # Filter to semver tags >= MIN_VERSION
+          SEMVER_TAGS=$(echo "$UPSTREAM_TAGS" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+          FILTERED_TAGS=$(echo "$SEMVER_TAGS" | while read -r tag; do
+            if [ -n "$tag" ] && [ "$(printf '%s\n%s' "$MIN_VERSION" "$tag" | sort -V | head -1)" = "$MIN_VERSION" ]; then
+              echo "$tag"
+            fi
+          done)
+
+          echo "Upstream semver tags >= ${MIN_VERSION}:"
+          echo "$FILTERED_TAGS"
+
+          # Fetch existing GHCR tags
+          echo "Fetching existing GHCR tags..."
+          EXISTING_TAGS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /user/packages/container/directus-aio/versions \
+            --paginate --jq '.[].metadata.container.tags[]' 2>/dev/null || echo "")
+
+          echo "Existing GHCR tags:"
+          echo "$EXISTING_TAGS"
+
+          # Find latest upstream tag
+          LATEST_UPSTREAM=$(echo "$FILTERED_TAGS" | sort -V | tail -1)
+          echo "Latest upstream: $LATEST_UPSTREAM"
+
+          # Determine missing tags
+          MISSING=""
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            if ! echo "$EXISTING_TAGS" | grep -qx "$tag"; then
+              MISSING="${MISSING}${tag}"$'\n'
+            fi
+          done <<< "$FILTERED_TAGS"
+
+          if [ -z "$MISSING" ]; then
+            echo "All tags up to date."
+            exit 0
+          fi
+
+          echo "Missing tags to build:"
+          echo "$MISSING"
+
+          # Trigger build for each missing tag
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            IS_LATEST="false"
+            if [ "$tag" = "$LATEST_UPSTREAM" ]; then
+              IS_LATEST="true"
+            fi
+            echo "Triggering build for $tag (latest=$IS_LATEST)..."
+            gh workflow run build.yml \
+              -f directus_version="$tag" \
+              -f is_latest="$IS_LATEST"
+          done <<< "$MISSING"
