@@ -15,7 +15,8 @@ RUN apk update && apk upgrade && \
       su-exec && \
     mkdir -p /persistent && \
     mkdir -p /home/node && \
-    chown node:node /home/node
+    chown node:node /home/node && \
+    rm -rf /var/cache/apk/*
 
 VOLUME /persistent
 

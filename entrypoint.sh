@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+cleanup() {
+  su-exec postgres pg_ctl -D /persistent/pgdata -w stop 2>/dev/null || true
+  valkey-cli shutdown nosave 2>/dev/null || true
+}
+trap cleanup EXIT SIGTERM SIGINT
+
 # --- Persistence check ---
 # Fail if /persistent is not a real mount (same device as /)
 ROOT_DEV=$(stat -c '%d' /)
