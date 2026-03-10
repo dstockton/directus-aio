@@ -11,14 +11,13 @@ RUN apk update && apk upgrade && \
       postgresql-client \
       postgresql-contrib \
       valkey \
+      valkey-cli \
       bash \
       su-exec && \
     mkdir -p /persistent && \
     mkdir -p /home/node && \
     chown node:node /home/node && \
     rm -rf /var/cache/apk/*
-
-VOLUME /persistent
 
 # Default environment variables
 ENV DB_CLIENT="pg" \

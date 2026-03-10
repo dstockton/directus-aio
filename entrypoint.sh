@@ -24,6 +24,10 @@ PGDATA="/persistent/pgdata"
 mkdir -p /persistent/valkey
 chown node:node /persistent/valkey
 
+# Postgres needs a socket directory
+mkdir -p /run/postgresql
+chown postgres:postgres /run/postgresql
+
 # --- Init Postgres if needed ---
 if [ ! -d "$PGDATA" ]; then
   echo "Initializing PostgreSQL database..."
