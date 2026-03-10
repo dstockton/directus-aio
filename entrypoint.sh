@@ -8,11 +8,12 @@ cleanup() {
 trap cleanup EXIT SIGTERM SIGINT
 
 # --- Persistence check ---
-# Fail if /persistent is not a real mount (same device as /)
-ROOT_DEV=$(stat -c '%d' /)
-PERSISTENT_DEV=$(stat -c '%d' /persistent)
-
-if [ "$ROOT_DEV" = "$PERSISTENT_DEV" ]; then
+# Fail if /persistent is not a real mount point (check mountinfo, fall back to device ID comparison)
+if grep -q ' /persistent ' /proc/self/mountinfo 2>/dev/null; then
+  : # mounted, good
+elif [ "$(stat -c '%d' /)" != "$(stat -c '%d' /persistent)" ]; then
+  : # different device, good
+else
   echo "ERROR: /persistent is not a mounted volume. Data would be lost on container restart."
   echo "Run with: docker run -v <volume-or-path>:/persistent ..."
   exit 1
