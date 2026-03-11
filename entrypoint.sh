@@ -91,15 +91,17 @@ echo "PostgreSQL is ready."
 echo "Starting Directus..."
 cd /directus
 
-# Skip bootstrap on warm restarts when version hasn't changed
-CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "unknown")
-MARKER="/persistent/.bootstrapped-version"
+# Skip bootstrap if this exact image build has already been bootstrapped.
+# /directus/.build-hash is baked at build time from package.json + entrypoint.
+BUILD_HASH=$(cat /directus/.build-hash)
+MARKER="/persistent/.bootstrapped"
+mkdir -p /persistent
 
-if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$CURRENT_VERSION" ]; then
-  echo "Skipping bootstrap (already ran for v${CURRENT_VERSION})"
+if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$BUILD_HASH" ]; then
+  echo "Skipping bootstrap (image $BUILD_HASH already bootstrapped)"
 else
   node cli.js bootstrap
-  echo "$CURRENT_VERSION" > "$MARKER"
+  echo "$BUILD_HASH" > "$MARKER"
 fi
 
 exec node cli.js start

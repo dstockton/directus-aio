@@ -27,6 +27,9 @@ ENV DB_CLIENT="pg" \
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Build fingerprint — changes when Directus version, entrypoint, or config changes
+RUN sha256sum /directus/package.json /entrypoint.sh | sha256sum | cut -c1-16 > /directus/.build-hash
+
 USER node
 
 EXPOSE 8055
