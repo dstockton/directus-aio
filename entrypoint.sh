@@ -87,8 +87,19 @@ echo "Starting PostgreSQL..."
 pg_ctl -D "$PGDATA" -o "-p 5432" -w start
 echo "PostgreSQL is ready."
 
-# --- Start Directus (foreground, no PM2) ---
+# --- Start Directus ---
 echo "Starting Directus..."
 cd /directus
-node cli.js bootstrap
+
+# Skip bootstrap on warm restarts when version hasn't changed
+CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)" 2>/dev/null || echo "unknown")
+MARKER="/persistent/.bootstrapped-version"
+
+if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$CURRENT_VERSION" ]; then
+  echo "Skipping bootstrap (already ran for v${CURRENT_VERSION})"
+else
+  node cli.js bootstrap
+  echo "$CURRENT_VERSION" > "$MARKER"
+fi
+
 exec node cli.js start

@@ -19,7 +19,10 @@ ENV DB_CLIENT="pg" \
     DB_USER="directus" \
     DB_PASSWORD="directus" \
     DB_DATABASE="directus" \
-    STORAGE_LOCAL_ROOT="/persistent/uploads"
+    STORAGE_LOCAL_ROOT="/persistent/uploads" \
+    HASH_MEMORY_COST="8192" \
+    HASH_TIME_COST="2" \
+    HASH_PARALLELISM="1"
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
