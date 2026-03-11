@@ -1,6 +1,6 @@
 # directus-aio
 
-All-in-one Directus Docker image with embedded PostgreSQL and MinIO. For simple demo/dev hosting.
+All-in-one Directus Docker image with embedded PostgreSQL. For simple demo/dev hosting.
 
 ## Quick Start
 
@@ -17,10 +17,14 @@ docker run -d \
 ## What's Included
 
 - **Directus** — headless CMS (foreground process)
-- **PostgreSQL** — database (data stored at `/persistent/pgdata`)
-- **MinIO** — S3-compatible object storage (data at `/persistent/minio`, console at port 9001)
+- **PostgreSQL** — database (data at `/persistent/pgdata`)
+- File uploads stored at `/persistent/uploads`
 
 A `-v` mount on `/persistent` is **required** — the container will refuse to start without one.
+
+## Resource Tuning
+
+Memory is auto-allocated at startup based on container limits (~60% Node, ~35% Postgres, ~5% OS). Works well from 256MB up.
 
 ## Default Config
 
@@ -32,14 +36,7 @@ A `-v` mount on `/persistent` is **required** — the container will refuse to s
 | DB_USER | directus |
 | DB_PASSWORD | directus |
 | DB_DATABASE | directus |
-| STORAGE_LOCATIONS | s3 |
-| STORAGE_S3_DRIVER | s3 |
-| STORAGE_S3_KEY | minioadmin |
-| STORAGE_S3_SECRET | minioadmin |
-| STORAGE_S3_BUCKET | directus |
-| STORAGE_S3_ENDPOINT | http://127.0.0.1:9000 |
-| STORAGE_S3_REGION | us-east-1 |
-| STORAGE_S3_FORCE_PATH_STYLE | true |
+| STORAGE_LOCAL_ROOT | /persistent/uploads |
 
 All standard Directus environment variables are supported.
 
