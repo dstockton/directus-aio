@@ -1,6 +1,6 @@
 # directus-aio
 
-All-in-one Directus Docker image with embedded PostgreSQL and Valkey. For simple demo/dev hosting.
+All-in-one Directus Docker image with embedded PostgreSQL and MinIO. For simple demo/dev hosting.
 
 ## Quick Start
 
@@ -11,14 +11,14 @@ docker run -d \
   -e SECRET=change-me \
   -e ADMIN_EMAIL=admin@example.com \
   -e ADMIN_PASSWORD=admin \
-  ghcr.io/dstockton/directus-aio:11.16.0
+  ghcr.io/dstockton/directus-aio:latest
 ```
 
 ## What's Included
 
 - **Directus** — headless CMS (foreground process)
 - **PostgreSQL** — database (data stored at `/persistent/pgdata`)
-- **Valkey** — cache (Redis-compatible, data at `/persistent/valkey`)
+- **MinIO** — S3-compatible object storage (data at `/persistent/minio`, console at port 9001)
 
 A `-v` mount on `/persistent` is **required** — the container will refuse to start without one.
 
@@ -32,10 +32,14 @@ A `-v` mount on `/persistent` is **required** — the container will refuse to s
 | DB_USER | directus |
 | DB_PASSWORD | directus |
 | DB_DATABASE | directus |
-| CACHE_ENABLED | true |
-| CACHE_AUTO_PURGE | true |
-| CACHE_STORE | redis |
-| REDIS | redis://127.0.0.1:6379 |
+| STORAGE_LOCATIONS | s3 |
+| STORAGE_S3_DRIVER | s3 |
+| STORAGE_S3_KEY | minioadmin |
+| STORAGE_S3_SECRET | minioadmin |
+| STORAGE_S3_BUCKET | directus |
+| STORAGE_S3_ENDPOINT | http://127.0.0.1:9000 |
+| STORAGE_S3_REGION | us-east-1 |
+| STORAGE_S3_FORCE_PATH_STYLE | true |
 
 All standard Directus environment variables are supported.
 
