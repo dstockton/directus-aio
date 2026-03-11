@@ -87,8 +87,8 @@ echo "Starting PostgreSQL..."
 pg_ctl -D "$PGDATA" -o "-p 5432" -w start
 echo "PostgreSQL is ready."
 
-# --- Start Directus (foreground) ---
+# --- Start Directus (foreground, no PM2) ---
 echo "Starting Directus..."
 cd /directus
 node cli.js bootstrap
-exec pm2-runtime start ecosystem.config.cjs
+exec node cli.js start
